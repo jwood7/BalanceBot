@@ -45,15 +45,15 @@ def make_table(team1,team2):
         table += " " + team2["players"][i]["player_name"] + " " * (longest_len2 - len(team2["players"][i]["player_name"])) + " |"
         table += " " + str("%.3f" % round(team2["players"][i]["player_score"],3)) + " ║\n"
     if (team1["team_num_players"] > team2["team_num_players"]):
-        table += "║" + " " + team1["players"][i]["player_name"] + " " * (longest_len1 - len(team1["players"][i]["player_name"])) + " |"
-        table += " " + str("%.3f" % round(team1["players"][i]["player_score"],3)) + " ║"
+        table += "║" + " " + team1["players"][-1]["player_name"] + " " * (longest_len1 - len(team1["players"][-1]["player_name"])) + " |"
+        table += " " + str("%.3f" % round(team1["players"][-1]["player_score"],3)) + " ║"
         table += " None" + " " * (longest_len2 - len("None")) + " |"
         table += " " + "0.000" + " ║\n"
     elif(team1["team_num_players"] < team2["team_num_players"]):
         table += "║" + " None" + " " * (longest_len1 - len("None")) + " |"
         table += " " + "0.000" + " ║"
-        table += " " + team2["players"][i]["player_name"] + " " * (longest_len2 - len(team2["players"][i]["player_name"])) + " |"
-        table += " " + str("%.3f" % round(team2["players"][i]["player_score"],3)) + " ║\n"
+        table += " " + team2["players"][-1]["player_name"] + " " * (longest_len2 - len(team2["players"][-1]["player_name"])) + " |"
+        table += " " + str("%.3f" % round(team2["players"][-1]["player_score"],3)) + " ║\n"
     #bottom border
     table += "╚" + "═" * (longest_len1 + 2) + "╧" + "═" * 7 + "╩" + "═" * (longest_len2 + 2) + "╧" + "═" * 7 + "╝\n"
     return table
@@ -112,6 +112,63 @@ testOptions = [
     }
 ]
 
+testPlayers = [
+    {
+        "steam_id": "STEAM_0:87492795",
+        "discord": "yakobay",
+        "handle": "Yakobay",
+        "captain": "TRUE"
+    },
+    {
+        "steam_id": "STEAM_1:233495",
+        "discord": "Edgespresso",
+        "handle": "Edge",
+        "captain": "TRUE"
+    },
+    {
+        "steam_id": "STEAM_0:474747447",
+        "discord": "ogre",
+        "handle": "Ogre",
+        "captain": "FALSE"
+    },
+    {
+        "steam_id": "STEAM_2:23333",
+        "discord": "The Toze",
+        "handle": "Toze",
+        "captain": "FALSE"
+    },
+    {
+        "steam_id": "STEAM_0:555557",
+        "discord": "Mailboxhead",
+        "handle": "Mailboxhead",
+        "captain": "FALSE"
+    },
+    {
+        "steam_id": "STEAM_2:666666",
+        "discord": "Salty",
+        "handle": "The Salty Spittoon",
+        "captain": "FALSE"
+    },
+    {
+        "steam_id": "STEAM_1:666667",
+        "discord": "Nuticles",
+        "handle": "Nuticles",
+        "captain": "FALSE"
+    },
+    {
+        "steam_id": "STEAM_3:22222",
+        "discord": "Kura",
+        "handle": "Kurevan",
+        "captain": "FALSE"
+    },
+    {
+        "steam_id": "STEAM_0:999999999",
+        "discord": "Duckhead",
+        "handle": "Duckhead",
+        "captain": "FALSE"
+    }
+]
+
 client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
@@ -123,6 +180,28 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
+    if message.content.startswith('!gf_test'): #send test data to balance api
+        picker_url = "http://159.65.229.12:5000/balance"
+        # test data
+        # member_names = ["Edge", "Mailboxhead", "Dream", "Unthink", "Duckhead", "Yakobay", "Ogre", "Cloner", "Toze"]
+        # response_picker = requests.post(picker_url, json = {"players": member_names})
+        
+        response_picker = requests.post(picker_url, json = testPlayers)
+        if response_picker.content and response_picker.status_code == 200:
+            print(response_picker)
+            print(response_picker.text)
+            options = json.loads(response_picker.text)
+            client.options = options
+            #*BOT* will display The 5 team options in a new DISCORD channel (Captains), with some sort of voting options
+            for i in range(len(options)):
+                await message.channel.send("Option " + str(i+1) +  ":\n```" + make_table(options[i]["team_a"],options[i]["team_b"]) + "```")
+            await message.channel.send("Choose your teams by typing !gf_pick [option number]")
+            client.cap1 = "Yakobay"
+            client.cap2 = "Edge"
+        else:
+            print(response_picker.text)
+            print(response_picker.status_code)
+            print("picker api failed")
     if message.content.startswith('!gf_teams'): #check score of map 
         if (len(message.content.split(' ')) < 2):
             await message.channel.send("!gf_teams [captain1] [captain2] to pick teams")
@@ -143,7 +222,13 @@ async def on_message(message):
             # print(response_stats)
             if response_stats.content and response_stats.status_code == 200:
                 teams = json.loads(response_stats.text)
+                for player in teams["players"]:
+                    if player["handle"] == command[1] or player["handle"] == command[2] or player["discord"] == command[1] or player["discord"] == command[2]:
+                        player["captain"] = "TRUE"
+                    else:
+                        player["captain"] = "FALSE"
                 print(teams)
+                print(teams["players"])
                 client.cap1 = teams['captains']["captain1"]
                 client.cap2 = teams['captains']["captain2"]
                 # await message.channel.send(captains["status"])
@@ -151,11 +236,13 @@ async def on_message(message):
                 # test data
                 # member_names = ["Edge", "Mailboxhead", "Dream", "Unthink", "Duckhead", "Yakobay", "Ogre", "Cloner", "Toze"]
                 # response_picker = requests.post(picker_url, json = {"players": member_names})
-                response_picker = requests.post(picker_url, json = {"players": teams["players"]})
+                
+                response_picker = requests.post(picker_url, json = teams["players"])
                 if response_picker.content and response_picker.status_code == 200:
+                    print(response_picker)
+                    print(response_picker.text)
                     options = json.loads(response_picker.text)
                     client.options = options
-                    # print(response_picker.text)
                     #*BOT* will display The 5 team options in a new DISCORD channel (Captains), with some sort of voting options
                     for i in range(len(options)):
                         await message.channel.send("Option " + str(i+1) +  ":\n```" + make_table(options[i]["team_a"],options[i]["team_b"]) + "```")
@@ -187,39 +274,48 @@ async def on_message(message):
             channel_b = client.get_channel(737465087710724168)
             #move players to team channels
             for player in selected_option["team_a"]["players"]:
-                user = discord.utils.get(client.get_all_members(), name=player["player_name"].lower())
+                print(player["discord"])
+                user = discord.utils.get(client.get_all_members(), name=player["discord"].lower())
                 if user is not None:
                     await user.move_to(channel_a)
+                    print ("moved")
                 else:
-                    print(player["player_name"] + " not found")
+                    print(player["discord"] + " not found")
             for player in selected_option["team_b"]["players"]:
-                user = discord.utils.get(client.get_all_members(), name=player["player_name"].lower())
+                print(player["discord"])
+                user = discord.utils.get(client.get_all_members(), name=player["discord"].lower())
                 if user is not None:
+                    print ("moved")
                     await user.move_to(channel_b)
                 else:
-                    print(player["player_name"] + " not found")
+                    print(player["discord"] + " not found")
             #send selected team to selectedTeam API
-            select_url = "http://159.65.229.12:5000/selectedTeam"
-            response_select = requests.post(select_url, json = selected_option) 
-            if response_select.content and response_select.status_code == 200:
-                print(response_select.text)
-            else:
-                print(response_select.text)
-                print(response_select.status_code)
-                print("select api failed")
+            # select_url = "http://159.65.229.12:5000/selectedTeam"
+            # response_select = requests.post(select_url, json = selected_option) 
+            # if response_select.content and response_select.status_code == 200:
+            #     print(response_select.text)
+            # else:
+            #     print(response_select.text)
+            #     print(response_select.status_code)
+            #     print("select api failed")
             #add captains 
             for player in selected_option["team_a"]["players"]:
                 if player["player_name"] == client.cap1:
-                    selected_option["team_a"]["captain"] = client.cap1
-                    selected_option["team_b"]["captain"] = client.cap2
+                    # selected_option["team_a"]["captain"] = client.cap1
+                    # selected_option["team_b"]["captain"] = client.cap2
+                    # captains are correct
                     break
                 if player["player_name"] == client.cap2:
-                    selected_option["team_a"]["captain"] = client.cap2
-                    selected_option["team_b"]["captain"] = client.cap1
+                    # selected_option["team_a"]["captain"] = client.cap2
+                    # selected_option["team_b"]["captain"] = client.cap1
+                    # teams need to be swapped
+                    temp = selected_option["team_a"]
+                    selected_option["team_a"] = selected_option["team_b"]
+                    selected_option["team_b"] = temp
                     break
             print(selected_option)
             save_url = "http://192.168.0.209:8000/api/stats/save_teams/"
-            response_save = requests.post(save_url, json = {"team_a": command[1], "team_b": command[2],"key": os.getenv('KEY')})
+            response_save = requests.post(save_url, json = {"team1": selected_option["team_a"], "team2": selected_option["team_b"], "cap1": client.cap1, "cap2": client.cap2, "key": os.getenv('KEY')})
             if(response_save.content and response_save.status_code == 200):
                 print(response_save.text)
             else:
