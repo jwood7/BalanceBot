@@ -214,10 +214,10 @@ async def on_message(message):
             members = lounge.members
             member_names = [member.name for member in members]
             await message.channel.send(f"Members in lounge: {', '.join(member_names)}")
-            stats_url = "http://192.168.0.209:8000/api/stats/pick_teams/"
+            # stats_url = "http://192.168.0.209:8000/api/stats/pick_teams/"
             # stats_url = "http://192.168.0.209:8000/api/stats/pick_teams?cap1=" + command[1] + "&cap2=" + command[2]
             # response_stats =  requests.get(stats_url)
-            # stats_url = "http://stats.geekfestclan.com/api/stats/pick_teams/"
+            stats_url = "http://stats.geekfestclan.com/api/stats/pick_teams/"
             response_stats = requests.post(stats_url, json = {"cap1": command[1], "cap2": command[2],"players": member_names, "key": os.getenv('KEY')})
             # print(response_stats)
             if response_stats.content and response_stats.status_code == 200:
@@ -328,5 +328,8 @@ async def on_message(message):
 #to do: 
 # Vote functionality. Embed and send tables.
 # Send team data to team API. Call stats captain api
+# Move/get teams from last week
+# return everyone to lounge
+# shorten commands
     
 client.run(os.getenv('TOKEN'))
