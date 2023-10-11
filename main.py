@@ -222,11 +222,16 @@ async def on_message(message):
             # print(response_stats)
             if response_stats.content and response_stats.status_code == 200:
                 teams = json.loads(response_stats.text)
+                captainsAttending = 0
                 for player in teams["players"]:
-                    if player["handle"] == command[1] or player["handle"] == command[2] or player["discord"] == command[1] or player["discord"] == command[2]:
+                    if player["handle"].lower() == command[1].lower() or player["handle"].lower() == command[2].lower() or player["discord"].lower() == command[1].lower() or player["discord"].lower() == command[2].lower():
                         player["captain"] = "TRUE"
+                        captainsAttending += 1
                     else:
                         player["captain"] = "FALSE"
+                if captainsAttending < 2:
+                    await message.channel.send("Both captains must be in the lounge to pick teams.")
+                    return
                 print(teams)
                 print(teams["players"])
                 client.cap1 = teams['captains']["captain1"]
