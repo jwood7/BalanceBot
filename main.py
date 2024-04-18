@@ -184,9 +184,9 @@ async def on_message(message):
         picker_url = os.getenv('PICKER_IP') + "/balance"
         # test data
         # member_names = ["Edge", "Mailboxhead", "Dream", "Unthink", "Duckhead", "Yakobay", "Ogre", "Cloner", "Toze"]
-        # response_picker = await requests.post(picker_url, json = {"players": member_names})
+        # response_picker = requests.post(picker_url, json = {"players": member_names})
         
-        response_picker = await requests.post(picker_url, json = testPlayers)
+        response_picker = requests.post(picker_url, json = testPlayers)
         if response_picker.content and response_picker.status_code == 200:
             print(response_picker)
             print(response_picker.text)
@@ -218,7 +218,7 @@ async def on_message(message):
             # stats_url = os.getenv('STATS_IP')+ "/api/stats/pick_teams?cap1=" + command[1] + "&cap2=" + command[2]
             # response_stats =  requests.get(stats_url)
             stats_url = "http://stats.geekfestclan.com/api/stats/pick_teams/"
-            response_stats = await requests.post(stats_url, json = {"cap1": command[1], "cap2": command[2],"players": member_names, "key": os.getenv('KEY')})
+            response_stats = requests.post(stats_url, json = {"cap1": command[1], "cap2": command[2],"players": member_names, "key": os.getenv('KEY')})
             # print(response_stats)
             if response_stats.content and response_stats.status_code == 200:
                 teams = json.loads(response_stats.text)
@@ -240,9 +240,9 @@ async def on_message(message):
                 picker_url = os.getenv('PICKER_IP') + "/balance"
                 # test data
                 # member_names = ["Edge", "Mailboxhead", "Dream", "Unthink", "Duckhead", "Yakobay", "Ogre", "Cloner", "Toze"]
-                # response_picker = await requests.post(picker_url, json = {"players": member_names})
+                # response_picker = requests.post(picker_url, json = {"players": member_names})
                 
-                response_picker = await requests.post(picker_url, json = teams["players"])
+                response_picker = requests.post(picker_url, json = teams["players"])
                 if response_picker.content and response_picker.status_code == 200:
                     print(response_picker)
                     print(response_picker.text)
@@ -296,7 +296,7 @@ async def on_message(message):
                     print(player["discord"] + " not found")
             #send selected team to selectedTeam API
             # select_url = os.getenv('PICKER_IP') + "/selectedTeam"
-            # response_select = await requests.post(select_url, json = selected_option) 
+            # response_select = requests.post(select_url, json = selected_option) 
             # if response_select.content and response_select.status_code == 200:
             #     print(response_select.text)
             # else:
@@ -320,7 +320,7 @@ async def on_message(message):
                     break
             print(selected_option)
             save_url = "http://192.168.0.209:8000/api/stats/save_teams/"
-            response_save = await requests.post(save_url, json = {"team1": selected_option["team_a"], "team2": selected_option["team_b"], "cap1": client.cap1, "cap2": client.cap2, "key": os.getenv('KEY')})
+            response_save = requests.post(save_url, json = {"team1": selected_option["team_a"], "team2": selected_option["team_b"], "cap1": client.cap1, "cap2": client.cap2, "key": os.getenv('KEY')})
             if(response_save.content and response_save.status_code == 200):
                 print(response_save.text)
             else:
