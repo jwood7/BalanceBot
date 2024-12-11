@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import requests
 import json
+from datetime import datetime
 
 load_dotenv()
 
@@ -176,8 +177,24 @@ async def on_ready():
     client.cap1=""
     client.cap2=""
 
+async def move_player(player, channel):
+    print(player["discord"])
+    if player["discord"] is not None:
+        user = discord.utils.get(client.get_all_members(), name=player["discord"].lower())
+        if user is not None:
+            await user.move_to(channel)
+        else:
+            print(player["discord"] + " not found")
+    else:
+        print(player["handle"] + " has no associated Discord handle")
+
 @client.event
 async def on_message(message):
+    
+    channel_a = client.get_channel(737465015904239717)
+    channel_b = client.get_channel(737465087710724168)
+    lounge = client.get_channel(737465527441555467)
+    captainsQuarter = client.get_channel(1138996335585022032)
     if message.author == client.user:
         return
     if message.content.startswith('!gf_test'): #send test data to balance api
@@ -185,7 +202,6 @@ async def on_message(message):
         # test data
         # member_names = ["Edge", "Mailboxhead", "Dream", "Unthink", "Duckhead", "Yakobay", "Ogre", "Cloner", "Toze"]
         # response_picker = requests.post(picker_url, json = {"players": member_names})
-        
         response_picker = requests.post(picker_url, json = testPlayers)
         if response_picker.content and response_picker.status_code == 200:
             print(response_picker)
@@ -207,7 +223,6 @@ async def on_message(message):
             await message.channel.send("!gf_teams [captain1] [captain2] to pick teams")
         else:
             command = message.content.split(' ')
-            lounge = client.get_channel(737465527441555467)
             if lounge is None:
                 await message.channel.send("Voice channel not found.")
                 return
@@ -275,25 +290,11 @@ async def on_message(message):
             # print(client.options)
             selected_option = client.options[int(command[1])-1]
             print(selected_option)
-            channel_a = client.get_channel(737465015904239717)
-            channel_b = client.get_channel(737465087710724168)
             #move players to team channels
             for player in selected_option["team_a"]["players"]:
-                print(player["discord"])
-                user = discord.utils.get(client.get_all_members(), name=player["discord"].lower())
-                if user is not None:
-                    await user.move_to(channel_a)
-                    print ("moved")
-                else:
-                    print(player["discord"] + " not found")
+                await move_player(player, channel_a)
             for player in selected_option["team_b"]["players"]:
-                print(player["discord"])
-                user = discord.utils.get(client.get_all_members(), name=player["discord"].lower())
-                if user is not None:
-                    print ("moved")
-                    await user.move_to(channel_b)
-                else:
-                    print(player["discord"] + " not found")
+                await move_player(player, channel_b)
             #send selected team to selectedTeam API
             # select_url = os.getenv('PICKER_IP') + "/selectedTeam"
             # response_select = requests.post(select_url, json = selected_option) 
@@ -319,7 +320,7 @@ async def on_message(message):
                     selected_option["team_b"] = temp
                     break
             print(selected_option)
-            save_url = "http://192.168.0.209:8000/api/stats/save_teams/"
+            save_url = os.getenv('STATS_IP') + "/api/stats/save_teams/"
             response_save = requests.post(save_url, json = {"team1": selected_option["team_a"], "team2": selected_option["team_b"], "cap1": client.cap1, "cap2": client.cap2, "key": os.getenv('KEY')})
             if(response_save.content and response_save.status_code == 200):
                 print(response_save.text)
@@ -327,8 +328,43 @@ async def on_message(message):
                 print(response_save.text)
                 print(response_save.status_code)
                 print("save api failed")
-            
+    elif message.content.startswith('!get_attendance') | message.content.startswith('$get_attendance') | message.content.startswith('/get_attendance'):
+        # send discord members in lounge, captain's quarters, and team A/ team B channels to API 
+        if lounge is None or captainsQuarter is None or channel_a is None or channel_b is None:
+            await message.channel.send("Voice channel not found.")
+            return
+        members = captainsQuarter.members + lounge.members +  channel_a.members + channel_b.members
+        member_names = [member.name for member in members]
+        
+        url = os.getenv("STATS_API_URL") + "/load-discord-geeks/"
 
+        secret_key = os.getenv('STATS_API_KEY')
+        headers = {
+            "Authorization": f"Bearer {secret_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Make the POST request
+        response = requests.post(url, json=member_names, headers=headers)
+
+        # Print the response
+        print(response.status_code)
+        print(response.json())
+    elif message.content.startswith('!move_teams') | message.content.startswith('$move_teams') | message.content.startswith('/move_teams'):
+        # move attendees to correct channels
+        today = str(datetime.today()).split()[0]
+        url = os.getenv("STATS_API_URL") + "/team-geek?event_date=" + today
+        response =  requests.get(url)
+        # print(response.json())
+        channels = [channel_a, channel_b]
+        for index, team in enumerate(response.json()):
+            for player in team['team']: 
+                if len(channels) > index:
+                    await move_player(player, channels[index])
+            
+#new to do: 
+# Move to proper / commands
+# Clean up code (move into separate functions)
 
 #to do: 
 # Vote functionality. Embed and send tables.
