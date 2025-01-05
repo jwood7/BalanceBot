@@ -336,7 +336,7 @@ async def on_message(message):
         members = captainsQuarter.members + lounge.members +  channel_a.members + channel_b.members
         member_names = [member.name for member in members]
         
-        url = os.getenv("STATS_API_URL") + "/load-discord-geeks/"
+        url = os.getenv("STATS_API_URL") + "/teams/load-discord-geeks/"
 
         secret_key = os.getenv('STATS_API_KEY')
         headers = {
@@ -353,7 +353,7 @@ async def on_message(message):
     elif message.content.startswith('!move_teams') | message.content.startswith('$move_teams') | message.content.startswith('/move_teams'):
         # move attendees to correct channels
         today = str(datetime.today()).split()[0]
-        url = os.getenv("STATS_API_URL") + "/team-geek?event_date=" + today
+        url = os.getenv("STATS_API_URL") + "/teams/team-geek?event_date=" + today
         response =  requests.get(url)
         # print(response.json())
         channels = [channel_a, channel_b]
@@ -365,6 +365,7 @@ async def on_message(message):
 #new to do: 
 # Move to proper / commands
 # Clean up code (move into separate functions)
+# On user join or leave discord channel, resend the get_attendance data
 
 #to do: 
 # Vote functionality. Embed and send tables.
