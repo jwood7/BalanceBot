@@ -184,9 +184,9 @@ async def move_player(player, channel):
         if user is not None:
             await user.move_to(channel)
         else:
-            print(player["discord"] + " not found")
+            return player["discord"] + " not found"
     else:
-        print(player["handle"] + " has no associated Discord handle")
+        return player["handle"] + " has no associated Discord handle"
 
 @client.event
 async def on_message(message):
@@ -349,7 +349,9 @@ async def on_message(message):
 
         # Print the response
         print(response.status_code)
-        print(response.json())
+        if response.status_code != 200:
+            print(response.json())
+            await message.channel.send(response.text)
     elif message.content.startswith('!move_teams') | message.content.startswith('$move_teams') | message.content.startswith('/move_teams'):
         # move attendees to correct channels
         today = str(datetime.today()).split()[0]
@@ -357,10 +359,17 @@ async def on_message(message):
         response =  requests.get(url)
         # print(response.json())
         channels = [channel_a, channel_b]
+        errors = []
         for index, team in enumerate(response.json()):
             for player in team['team']: 
                 if len(channels) > index:
-                    await move_player(player, channels[index])
+                    result = await move_player(player, channels[index])
+                    errors.append(result)
+        if (len(errors) >= 1):
+            errorMessage= "The following errors occurred while moving players: \n"
+            for error in errors: 
+                errorMessage += error + "\n"
+            await message.channel.send(errorMessage)
             
 #new to do: 
 # Move to proper / commands
